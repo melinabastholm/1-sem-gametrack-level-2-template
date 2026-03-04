@@ -115,6 +115,8 @@ If dimensions do not match, startup fails with a clear error.
 - Multiple triggers on the same tile/event run in array order.
 - `once: true` triggers are consumed after successful execution.
 - Unknown/invalid triggers are skipped with warnings.
+- Modal actions can set `maxWidth` and `maxHeight` (for example `"900px"` or `"80vh"`).
+- `content/modals.js` entries can also define `maxWidth` and `maxHeight` for reusable modal sizing.
 
 ## Collision Notes
 

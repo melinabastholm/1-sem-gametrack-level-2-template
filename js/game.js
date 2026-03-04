@@ -639,9 +639,13 @@ function executePlaySoundAction(action) {
 }
 
 function executeOpenTextAction(action) {
+    const sizeOptions = resolveModalSizeOptions(action);
+
     const didOpen = state.modal.openText({
         title: action.title || "Message",
-        text: action.text || ""
+        text: action.text || "",
+        maxWidth: sizeOptions.maxWidth,
+        maxHeight: sizeOptions.maxHeight
     });
 
     return didOpen;
@@ -649,6 +653,7 @@ function executeOpenTextAction(action) {
 
 function executeOpenVideoAction(action) {
     const contentEntry = getContentEntry(action.contentKey);
+    const sizeOptions = resolveModalSizeOptions(action, contentEntry);
 
     const videoSrc = action.src || contentEntry?.videoSrc;
     const videoType = action.videoType || contentEntry?.videoType || "video/mp4";
@@ -664,12 +669,15 @@ function executeOpenVideoAction(action) {
         title,
         src: videoSrc,
         type: videoType,
-        description
+        description,
+        maxWidth: sizeOptions.maxWidth,
+        maxHeight: sizeOptions.maxHeight
     });
 }
 
 function executeOpenHtmlAction(action) {
     const contentEntry = getContentEntry(action.contentKey);
+    const sizeOptions = resolveModalSizeOptions(action, contentEntry);
 
     const html = contentEntry?.html;
     const title = action.title || contentEntry?.title || "Info";
@@ -679,7 +687,19 @@ function executeOpenHtmlAction(action) {
         return false;
     }
 
-    return state.modal.openHtml({ title, html });
+    return state.modal.openHtml({
+        title,
+        html,
+        maxWidth: sizeOptions.maxWidth,
+        maxHeight: sizeOptions.maxHeight
+    });
+}
+
+function resolveModalSizeOptions(action, contentEntry = null) {
+    return {
+        maxWidth: action?.maxWidth ?? contentEntry?.maxWidth,
+        maxHeight: action?.maxHeight ?? contentEntry?.maxHeight
+    };
 }
 
 function executeTeleportAction(action) {

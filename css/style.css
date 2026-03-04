@@ -162,10 +162,13 @@ code {
 }
 
 .modal-panel {
+    --modal-max-width: 720px;
+    --modal-max-height: 86vh;
     position: relative;
     z-index: 1;
-    width: min(92vw, 720px);
-    max-height: 86vh;
+    width: min(92vw, var(--modal-max-width));
+    max-width: var(--modal-max-width);
+    max-height: var(--modal-max-height);
     overflow: auto;
     border-radius: var(--radius-md);
     border: 2px solid var(--color-panel-border);

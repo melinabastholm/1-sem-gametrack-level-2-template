@@ -1,4 +1,4 @@
-﻿export function createModalController({
+export function createModalController({
     modalRoot,
     titleElement,
     contentElement,
@@ -11,7 +11,14 @@
         throw new Error("Modal elements were not found.");
     }
 
+    const panelElement = modalRoot.querySelector(".modal-panel");
+    if (!panelElement) {
+        throw new Error("Modal panel element was not found.");
+    }
+
     let open = false;
+    const defaultMaxWidth = "720px";
+    const defaultMaxHeight = "86vh";
 
     function setVisibility(shouldShow) {
         open = shouldShow;
@@ -23,8 +30,34 @@
         contentElement.innerHTML = "";
     }
 
-    function openModal({ title, renderContent }) {
+    function normalizeCssSize(value, label) {
+        if (value === undefined || value === null) {
+            return null;
+        }
+
+        if (Number.isFinite(value) && value > 0) {
+            return `${value}px`;
+        }
+
+        if (typeof value === "string" && value.trim() !== "") {
+            return value.trim();
+        }
+
+        logger.warn(`[modal] Invalid ${label} value. Using default size.`);
+        return null;
+    }
+
+    function applyPanelSize({ maxWidth, maxHeight }) {
+        const resolvedMaxWidth = normalizeCssSize(maxWidth, "maxWidth") || defaultMaxWidth;
+        const resolvedMaxHeight = normalizeCssSize(maxHeight, "maxHeight") || defaultMaxHeight;
+
+        panelElement.style.setProperty("--modal-max-width", resolvedMaxWidth);
+        panelElement.style.setProperty("--modal-max-height", resolvedMaxHeight);
+    }
+
+    function openModal({ title, renderContent, maxWidth, maxHeight }) {
         clearContent();
+        applyPanelSize({ maxWidth, maxHeight });
         titleElement.textContent = title || "";
         renderContent(contentElement);
         setVisibility(true);
@@ -37,7 +70,7 @@
         return true;
     }
 
-    function openText({ title, text }) {
+    function openText({ title, text, maxWidth, maxHeight }) {
         if (typeof text !== "string" || text.trim() === "") {
             logger.warn("[modal] openModalText was called with empty text.");
             return false;
@@ -45,6 +78,8 @@
 
         return openModal({
             title,
+            maxWidth,
+            maxHeight,
             renderContent(target) {
                 const paragraph = document.createElement("p");
                 paragraph.textContent = text;
@@ -53,7 +88,7 @@
         });
     }
 
-    function openVideo({ title, src, type = "video/mp4", description = "" }) {
+    function openVideo({ title, src, type = "video/mp4", description = "", maxWidth, maxHeight }) {
         if (typeof src !== "string" || src.trim() === "") {
             logger.warn("[modal] openModalVideo was called without a valid src.");
             return false;
@@ -61,6 +96,8 @@
 
         return openModal({
             title,
+            maxWidth,
+            maxHeight,
             renderContent(target) {
                 const video = document.createElement("video");
                 video.controls = true;
@@ -91,7 +128,7 @@
         });
     }
 
-    function openHtml({ title, html }) {
+    function openHtml({ title, html, maxWidth, maxHeight }) {
         if (typeof html !== "string" || html.trim() === "") {
             logger.warn("[modal] openModalHtml was called without HTML content.");
             return false;
@@ -99,6 +136,8 @@
 
         return openModal({
             title,
+            maxWidth,
+            maxHeight,
             renderContent(target) {
                 // HTML here must come from predefined content entries only.
                 target.innerHTML = html;
