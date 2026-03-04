@@ -18,7 +18,7 @@ export const GAME_CONFIG = {
     player: {
         startTile: { x: 2, y: 2 },
         moveDurationMs: 150,
-        defaultFacing: "down",
+        defaultFacing: "right",
         spriteSheetSrc: "assets/player/player_sheet.png",
         frameWidth: 32,
         frameHeight: 32,
@@ -26,7 +26,7 @@ export const GAME_CONFIG = {
         // Direction rows in the sprite sheet.
         // Frames can stay at 1 if you do not want animation.
         directions: {
-            up: { row: 0, frames: 1 },
+            up: { row: 0, frames: 4 },
             down: { row: 1, frames: 1 },
             left: { row: 2, frames: 1 },
             right: { row: 3, frames: 1 }
@@ -63,8 +63,8 @@ export const GAME_CONFIG = {
         {
             id: "welcome_tile",
             type: "onEnterCell",
-            x: 6,
-            y: 6,
+            x: 3,
+            y: 2,
             once: true,
             action: {
                 kind: "openModalText",
@@ -86,8 +86,8 @@ export const GAME_CONFIG = {
         {
             id: "intro_video",
             type: "onEnterCell",
-            x: 3,
-            y: 2,
+            x: 6,
+            y: 6,
             action: {
                 kind: "openModalVideo",
                 title: "Intro Video",
