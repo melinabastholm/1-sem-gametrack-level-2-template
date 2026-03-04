@@ -51,23 +51,17 @@ export const GAME_CONFIG = {
 
     // Simple coordinate list for non-walkable cells.
     solidTiles: [
-        { x: 12, y: 8 }, { x: 12, y: 9 }, { x: 12, y: 10 }, { x: 12, y: 11 }, { x: 12, y: 12 },
-        { x: 10, y: 10 }, { x: 11, y: 10 }, { x: 13, y: 10 }, { x: 14, y: 10 },
-
-        { x: 24, y: 16 }, { x: 25, y: 16 }, { x: 26, y: 16 }, { x: 27, y: 16 }, { x: 28, y: 16 },
-        { x: 26, y: 14 }, { x: 26, y: 15 }, { x: 26, y: 17 }, { x: 26, y: 18 },
-
-        { x: 6, y: 20 }, { x: 7, y: 20 }, { x: 8, y: 20 }, { x: 6, y: 21 }, { x: 8, y: 21 },
-
-        { x: 32, y: 7 }, { x: 32, y: 8 }, { x: 32, y: 9 }, { x: 33, y: 9 }, { x: 34, y: 9 }
+        { x: 8, y: 2 }, { x: 12, y: 2 },
+        { x: 9, y: 3 }, { x: 10, y: 3 }, { x: 11, y: 3 },
+        { x: 8, y: 4 }, { x: 9, y: 4 }, { x: 10, y: 4 }, { x: 11, y: 4 }, { x: 12, y: 4 },
     ],
 
     triggers: [
         {
             id: "welcome_tile",
             type: "onEnterCell",
-            x: 3,
-            y: 3,
+            x: 6,
+            y: 6,
             once: true,
             action: {
                 kind: "openModalText",
@@ -78,8 +72,8 @@ export const GAME_CONFIG = {
         {
             id: "village_sign",
             type: "onInteractCell",
-            x: 12,
-            y: 10,
+            x: 10,
+            y: 3,
             action: {
                 kind: "openModalHtml",
                 title: "Village Sign",
@@ -88,9 +82,9 @@ export const GAME_CONFIG = {
         },
         {
             id: "intro_video",
-            type: "onInteractCell",
-            x: 20,
-            y: 6,
+            type: "onEnterCell",
+            x: 3,
+            y: 2,
             action: {
                 kind: "openModalVideo",
                 title: "Intro Video",
@@ -98,50 +92,48 @@ export const GAME_CONFIG = {
             }
         },
         {
-            id: "portal_sound",
-            type: "onInteractCell",
-            x: 30,
-            y: 9,
+            id: "portal_left_sound",
+            type: "onEnterCell",
+            x: 8,
+            y: 3,
             action: {
                 kind: "playSound",
                 soundKey: "teleport"
             }
         },
         {
-            id: "portal_jump",
-            type: "onInteractCell",
-            x: 30,
-            y: 9,
+            id: "portal_left_jump",
+            type: "onEnterCell",
+            x: 8,
+            y: 3,
             action: {
                 kind: "teleport",
-                targetX: 2,
-                targetY: 24,
+                targetX: 13,
+                targetY: 3,
                 sfx: "teleport"
             }
         },
         {
-            id: "portal_text",
-            type: "onInteractCell",
-            x: 30,
-            y: 9,
-            once: true,
+            id: "portal_right_sound",
+            type: "onEnterCell",
+            x: 12,
+            y: 3,
             action: {
-                kind: "openModalText",
-                title: "Portal",
-                text: "Multiple triggers ran on that same tile event."
+                kind: "playSound",
+                soundKey: "teleport"
             }
         },
         {
-            id: "arrival_message",
+            id: "portal_right_jump",
             type: "onEnterCell",
-            x: 2,
-            y: 24,
-            once: true,
+            x: 12,
+            y: 3,
             action: {
-                kind: "openModalText",
-                title: "Arrival",
-                text: "Teleport completed. You can walk back and trigger it again."
+                kind: "teleport",
+                targetX: 7,
+                targetY: 3,
+                sfx: "teleport"
             }
-        }
+        },
     ]
 };
