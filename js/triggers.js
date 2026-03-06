@@ -7,7 +7,7 @@ const SUPPORTED_ACTION_KINDS = new Set([
     "teleport"
 ]);
 
-export function createTriggerEngine({ triggers, executeAction, logger = console }) {
+export function createTriggerEngine({ triggers, executeAction, onTriggerConsumed = null, logger = console }) {
     if (typeof executeAction !== "function") {
         throw new Error("createTriggerEngine requires an executeAction function.");
     }
@@ -39,6 +39,14 @@ export function createTriggerEngine({ triggers, executeAction, logger = console 
                 executedCount += 1;
                 if (trigger.once) {
                     consumedTriggerIds.add(trigger.id);
+                    if (typeof onTriggerConsumed === "function") {
+                        try {
+                            onTriggerConsumed(trigger);
+                        }
+                        catch (error) {
+                            logger.warn(`[triggers] onTriggerConsumed failed for \"${trigger.id}\".`, error);
+                        }
+                    }
                 }
             }
         }

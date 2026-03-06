@@ -30,7 +30,9 @@ const refs = {
     viewport: document.getElementById("game-viewport"),
     world: document.getElementById("game-world"),
     mapLayer: document.getElementById("map-layer"),
+    triggerLayer: document.getElementById("trigger-layer"),
     playerSprite: document.getElementById("player-sprite"),
+    teleportEffect: document.getElementById("teleport-effect"),
     gameInfo: document.getElementById("game-info"),
     fatalError: document.getElementById("fatal-error"),
     modalRoot: document.getElementById("game-modal"),
@@ -49,6 +51,19 @@ const state = {
     solidTileSet: new Set(),
     deferredEnterTrigger: null,
     fatalError: false,
+    triggerSprites: new Map(),
+    isTeleporting: false,
+    teleportEffect: {
+        active: false,
+        element: null,
+        frames: 1,
+        speed: 150,
+        startTime: 0,
+        direction: "forward",
+        mode: "sheet",
+        durationMs: 0,
+        resolve: null
+    },
 
     player: {
         tileX: 0,
@@ -89,6 +104,8 @@ async function boot() {
         validateSpriteSheet(spriteSheet);
 
         setupWorldDimensions();
+        setupTeleportEffect();
+        buildTriggerSprites();
         setupPlayerSprite();
         setupModalSystem();
         setupAudioSystem();
@@ -219,6 +236,11 @@ function validateConfig(config) {
 function buildSolidTileSet() {
     state.solidTileSet.clear();
 
+    addSolidTilesFromConfig();
+    addSolidTilesFromTriggers();
+}
+
+function addSolidTilesFromConfig() {
     if (!Array.isArray(GAME_CONFIG.solidTiles)) {
         console.warn("[config] solidTiles is not an array. No solid tiles loaded.");
         return;
@@ -236,6 +258,29 @@ function buildSolidTileSet() {
         }
 
         console.warn("[config] Invalid solid tile entry was skipped.", tile);
+    }
+}
+
+function addSolidTilesFromTriggers() {
+    if (!Array.isArray(GAME_CONFIG.triggers)) {
+        return;
+    }
+
+    for (const trigger of GAME_CONFIG.triggers) {
+        if (!trigger || typeof trigger !== "object") {
+            continue;
+        }
+
+        if (trigger.isSolid !== true) {
+            continue;
+        }
+
+        if (!Number.isInteger(trigger.x) || !Number.isInteger(trigger.y)) {
+            console.warn("[triggers] isSolid trigger needs integer x/y coordinates.", trigger);
+            continue;
+        }
+
+        addSolidTile(trigger.x, trigger.y);
     }
 }
 
@@ -286,6 +331,154 @@ function setupWorldDimensions() {
     refs.world.style.height = `${mapHeightPx}px`;
     refs.mapLayer.style.width = `${mapWidthPx}px`;
     refs.mapLayer.style.height = `${mapHeightPx}px`;
+    refs.triggerLayer.style.width = `${mapWidthPx}px`;
+    refs.triggerLayer.style.height = `${mapHeightPx}px`;
+}
+
+function setupTeleportEffect() {
+    state.teleportEffect.element = refs.teleportEffect;
+    refs.teleportEffect.style.width = `${GAME_CONFIG.tileSize}px`;
+    refs.teleportEffect.style.height = `${GAME_CONFIG.tileSize}px`;
+    refs.teleportEffect.style.display = "none";
+}
+
+function buildTriggerSprites() {
+    refs.triggerLayer.innerHTML = "";
+    state.triggerSprites.clear();
+
+    if (!Array.isArray(GAME_CONFIG.triggers)) {
+        return;
+    }
+
+    for (const trigger of GAME_CONFIG.triggers) {
+        if (!trigger || typeof trigger !== "object") {
+            continue;
+        }
+
+        const spriteConfig = resolveTriggerSpriteConfig(trigger);
+        if (!spriteConfig) {
+            continue;
+        }
+
+        if (!Number.isInteger(trigger.x) || !Number.isInteger(trigger.y)) {
+            console.warn("[triggers] sprite trigger needs integer x/y coordinates.", trigger);
+            continue;
+        }
+
+        if (!isInsideMap(trigger.x, trigger.y)) {
+            console.warn(`[triggers] sprite trigger (${trigger.x}, ${trigger.y}) is outside map bounds.`);
+            continue;
+        }
+
+        const sprite = spriteConfig.mode === "sheet"
+            ? document.createElement("div")
+            : document.createElement("img");
+        sprite.className = "trigger-sprite";
+        if (spriteConfig.mode === "sheet") {
+            sprite.style.backgroundImage = `url("${spriteConfig.src}")`;
+        }
+        else {
+            sprite.src = spriteConfig.src;
+            sprite.alt = "";
+        }
+        sprite.style.width = `${GAME_CONFIG.tileSize}px`;
+        sprite.style.height = `${GAME_CONFIG.tileSize}px`;
+        sprite.style.left = `${trigger.x * GAME_CONFIG.tileSize}px`;
+        sprite.style.top = `${trigger.y * GAME_CONFIG.tileSize}px`;
+
+        refs.triggerLayer.appendChild(sprite);
+
+        if (typeof trigger.id === "string" && trigger.id.trim() !== "") {
+            state.triggerSprites.set(trigger.id, {
+                element: sprite,
+                frames: spriteConfig.frames,
+                speed: spriteConfig.speed,
+                startTime: performance.now(),
+                mode: spriteConfig.mode
+            });
+        }
+
+        preloadSpriteImage(spriteConfig.src, trigger.id);
+    }
+}
+
+function resolveTriggerSpriteConfig(trigger) {
+    const rawSprite = trigger.sprite;
+
+    if (typeof rawSprite === "string") {
+        const trimmed = rawSprite.trim();
+        return trimmed === ""
+            ? null
+            : { src: trimmed, frames: 1, speed: 0, mode: "image", isAnimatedImage: isAnimatedGifSource(trimmed) };
+    }
+
+    if (!rawSprite || typeof rawSprite !== "object") {
+        return null;
+    }
+
+    const src = typeof rawSprite.src === "string" ? rawSprite.src.trim() : "";
+    if (src === "") {
+        console.warn("[triggers] sprite object needs a non-empty src string.", trigger);
+        return null;
+    }
+    const isGif = isAnimatedGifSource(src);
+
+    let frames = 1;
+    if (Number.isInteger(rawSprite.frames) && rawSprite.frames > 0) {
+        frames = rawSprite.frames;
+    }
+    else if (rawSprite.frames !== undefined) {
+        console.warn("[triggers] sprite.frames should be a positive integer.", trigger);
+    }
+    if (isGif) {
+        frames = 1;
+    }
+
+    let speed = 150;
+    if (Number.isInteger(rawSprite.speed) && rawSprite.speed > 0) {
+        speed = rawSprite.speed;
+    }
+    else if (rawSprite.speed !== undefined) {
+        console.warn("[triggers] sprite.speed should be a positive integer.", trigger);
+    }
+
+    const mode = !isGif && frames > 1 ? "sheet" : "image";
+    return { src, frames, speed, mode, isAnimatedImage: isGif };
+}
+
+function isAnimatedGifSource(src) {
+    return /\.gif(\?.*)?$/i.test(src);
+}
+
+function preloadSpriteImage(src, triggerId) {
+    const image = new Image();
+    image.onerror = () => {
+        const id = typeof triggerId === "string" ? triggerId : "unknown";
+        console.warn(`[triggers] sprite \"${src}\" failed to load for trigger \"${id}\".`);
+    };
+    image.src = src;
+}
+
+function handleTriggerConsumed(trigger) {
+    if (!trigger || typeof trigger !== "object") {
+        return;
+    }
+
+    const hasStringSprite = typeof trigger.sprite === "string" && trigger.sprite.trim() !== "";
+    const hasObjectSprite = typeof trigger.sprite === "object" &&
+        trigger.sprite &&
+        typeof trigger.sprite.src === "string" &&
+        trigger.sprite.src.trim() !== "";
+
+    if (!hasStringSprite && !hasObjectSprite) {
+        return;
+    }
+
+    const spriteEntry = state.triggerSprites.get(trigger.id);
+    if (spriteEntry?.element) {
+        spriteEntry.element.remove();
+        state.triggerSprites.delete(trigger.id);
+    }
 }
 
 function setupPlayerSprite() {
@@ -313,7 +506,8 @@ function setupAudioSystem() {
 function setupTriggerSystem() {
     state.triggerEngine = createTriggerEngine({
         triggers: GAME_CONFIG.triggers,
-        executeAction: executeTriggerAction
+        executeAction: executeTriggerAction,
+        onTriggerConsumed: handleTriggerConsumed
     });
 }
 
@@ -351,7 +545,7 @@ function gameLoop(now) {
     state.lastFrameTime = now;
 
     update(deltaMs);
-    render();
+    render(now);
 
     requestAnimationFrame(gameLoop);
 }
@@ -359,7 +553,7 @@ function gameLoop(now) {
 function update(deltaMs) {
     runDeferredEnterTrigger();
 
-    if (!state.modal.isOpen()) {
+    if (!state.modal.isOpen() && !state.isTeleporting) {
         if (state.player.isMoving) {
             updateMovement(deltaMs);
         }
@@ -513,9 +707,65 @@ function getAvailableInteractTriggersAt(tileX, tileY) {
     });
 }
 
-function render() {
+function render(now = performance.now()) {
+    updateTriggerSpriteFrames(now);
+    updateTeleportEffect(now);
     refs.playerSprite.style.transform = `translate(${state.player.pixelX}px, ${state.player.pixelY}px)`;
     updatePlayerSpriteFrame();
+}
+
+function updateTeleportEffect(now) {
+    const effect = state.teleportEffect;
+    if (!effect.active || !effect.element) {
+        return;
+    }
+
+    const elapsed = now - effect.startTime;
+    if (effect.mode === "sheet") {
+        const rawFrame = Math.min(effect.frames - 1, Math.floor(elapsed / effect.speed));
+        const frameIndex = effect.direction === "backward"
+            ? Math.max(0, effect.frames - 1 - rawFrame)
+            : rawFrame;
+
+        const offsetX = -(frameIndex * GAME_CONFIG.tileSize);
+        effect.element.style.backgroundPosition = `${offsetX}px 0px`;
+    }
+
+    if (elapsed >= effect.durationMs) {
+        finishTeleportEffect();
+    }
+}
+
+function updateTriggerSpriteFrames(now) {
+    if (state.triggerSprites.size === 0) {
+        return;
+    }
+
+    for (const spriteEntry of state.triggerSprites.values()) {
+        if (!spriteEntry || spriteEntry.mode !== "sheet" || spriteEntry.frames <= 1 || spriteEntry.speed <= 0) {
+            continue;
+        }
+
+        const elapsed = now - spriteEntry.startTime;
+        const frameIndex = Math.floor(elapsed / spriteEntry.speed) % spriteEntry.frames;
+        const offsetX = -(frameIndex * GAME_CONFIG.tileSize);
+        spriteEntry.element.style.backgroundPosition = `${offsetX}px 0px`;
+    }
+}
+
+function finishTeleportEffect() {
+    const effect = state.teleportEffect;
+    effect.active = false;
+
+    if (effect.element) {
+        effect.element.style.display = "none";
+    }
+
+    const resolve = effect.resolve;
+    effect.resolve = null;
+    if (resolve) {
+        resolve();
+    }
 }
 
 function updatePlayerSpriteFrame() {
@@ -538,7 +788,7 @@ function onKeyDown(event) {
     if (direction) {
         event.preventDefault();
 
-        if (state.modal.isOpen()) {
+        if (state.modal.isOpen() || state.isTeleporting) {
             return;
         }
 
@@ -556,7 +806,7 @@ function onKeyDown(event) {
     if (INTERACT_KEYS.has(event.code)) {
         event.preventDefault();
 
-        if (state.modal.isOpen()) {
+        if (state.modal.isOpen() || state.isTeleporting) {
             return;
         }
 
@@ -702,6 +952,93 @@ function resolveModalSizeOptions(action, contentEntry = null) {
     };
 }
 
+function resolveTeleportSpriteConfig(action) {
+    if (!Object.prototype.hasOwnProperty.call(action, "sprite")) {
+        return null;
+    }
+
+    const rawSprite = action.sprite;
+
+    if (typeof rawSprite === "string") {
+        const trimmed = rawSprite.trim();
+        if (trimmed === "") {
+            console.warn("[triggers] teleport sprite string cannot be empty.");
+            return null;
+        }
+        return { src: trimmed, frames: 1, speed: 150, mode: "image" };
+    }
+
+    if (!rawSprite || typeof rawSprite !== "object") {
+        console.warn("[triggers] teleport sprite must be a string or object.");
+        return null;
+    }
+
+    const src = typeof rawSprite.src === "string" ? rawSprite.src.trim() : "";
+    if (src === "") {
+        console.warn("[triggers] teleport sprite object needs a non-empty src string.");
+        return null;
+    }
+    const isGif = isAnimatedGifSource(src);
+
+    let frames = 1;
+    if (Number.isInteger(rawSprite.frames) && rawSprite.frames > 0) {
+        frames = rawSprite.frames;
+    }
+    else if (rawSprite.frames !== undefined) {
+        console.warn("[triggers] teleport sprite.frames should be a positive integer.");
+    }
+    if (isGif) {
+        frames = 1;
+    }
+
+    let speed = 150;
+    if (Number.isInteger(rawSprite.speed) && rawSprite.speed > 0) {
+        speed = rawSprite.speed;
+    }
+    else if (rawSprite.speed !== undefined) {
+        console.warn("[triggers] teleport sprite.speed should be a positive integer.");
+    }
+
+    const mode = !isGif && frames > 1 ? "sheet" : "image";
+    return { src, frames, speed, mode };
+}
+
+function startTeleportEffect(tileX, tileY, spriteConfig, direction) {
+    if (!spriteConfig || !state.teleportEffect.element) {
+        return Promise.resolve();
+    }
+
+    const effect = state.teleportEffect;
+    const frames = Math.max(1, spriteConfig.frames);
+    const speed = Math.max(1, spriteConfig.speed);
+
+    effect.active = true;
+    effect.frames = frames;
+    effect.speed = speed;
+    effect.startTime = performance.now();
+    effect.direction = direction === "backward" ? "backward" : "forward";
+    effect.mode = spriteConfig.mode;
+    effect.durationMs = spriteConfig.mode === "sheet" ? frames * speed : speed;
+
+    effect.element.style.backgroundImage = `url("${spriteConfig.src}")`;
+    effect.element.style.left = `${tileX * GAME_CONFIG.tileSize}px`;
+    effect.element.style.top = `${tileY * GAME_CONFIG.tileSize}px`;
+    if (effect.mode === "sheet") {
+        const initialFrame = effect.direction === "backward" ? frames - 1 : 0;
+        effect.element.style.backgroundPosition = `${-(initialFrame * GAME_CONFIG.tileSize)}px 0px`;
+    }
+    else {
+        effect.element.style.backgroundPosition = "0px 0px";
+    }
+    effect.element.style.display = "block";
+
+    preloadSpriteImage(spriteConfig.src, "teleport_effect");
+
+    return new Promise((resolve) => {
+        effect.resolve = resolve;
+    });
+}
+
 function executeTeleportAction(action) {
     if (!Number.isInteger(action.targetX) || !Number.isInteger(action.targetY)) {
         console.warn("[triggers] teleport action needs integer targetX and targetY.");
@@ -718,17 +1055,52 @@ function executeTeleportAction(action) {
         return false;
     }
 
-    setPlayerTilePosition(action.targetX, action.targetY);
+    if (state.isTeleporting) {
+        console.warn("[triggers] teleport action skipped because another teleport is running.");
+        return false;
+    }
+
+    const spriteConfig = resolveTeleportSpriteConfig(action);
+    if (!spriteConfig) {
+        setPlayerTilePosition(action.targetX, action.targetY);
+        clearInputState();
+
+        const teleportSound = typeof action.sfx === "string" && action.sfx.trim() !== ""
+            ? action.sfx
+            : GAME_CONFIG.audioEvents.teleport;
+
+        state.audio.playSound(teleportSound);
+
+        // Run destination enter triggers on the next frame, not recursively in the same tick.
+        state.deferredEnterTrigger = { x: action.targetX, y: action.targetY };
+        return true;
+    }
+
+    const startX = state.player.tileX;
+    const startY = state.player.tileY;
+    const targetX = action.targetX;
+    const targetY = action.targetY;
+
+    state.isTeleporting = true;
     clearInputState();
 
-    const teleportSound = typeof action.sfx === "string" && action.sfx.trim() !== ""
-        ? action.sfx
-        : GAME_CONFIG.audioEvents.teleport;
+    startTeleportEffect(startX, startY, spriteConfig, "forward")
+        .then(() => {
+            setPlayerTilePosition(targetX, targetY);
 
-    state.audio.playSound(teleportSound);
+            const teleportSound = typeof action.sfx === "string" && action.sfx.trim() !== ""
+                ? action.sfx
+                : GAME_CONFIG.audioEvents.teleport;
 
-    // Run destination enter triggers on the next frame, not recursively in the same tick.
-    state.deferredEnterTrigger = { x: action.targetX, y: action.targetY };
+            state.audio.playSound(teleportSound);
+
+            return startTeleportEffect(targetX, targetY, spriteConfig, "backward");
+        })
+        .then(() => {
+            state.isTeleporting = false;
+            state.deferredEnterTrigger = { x: targetX, y: targetY };
+        });
+
     return true;
 }
 

@@ -115,8 +115,29 @@ If dimensions do not match, startup fails with a clear error.
 - Multiple triggers on the same tile/event run in array order.
 - `once: true` triggers are consumed after successful execution.
 - Unknown/invalid triggers are skipped with warnings.
+- Triggers may add `isSolid: true` to make the trigger tile non-walkable (best used with `onInteractCell`).
+- Triggers may add `sprite: "assets/sprites/your_image.png"` to draw a 32x32 image on that tile.
+- Spritesheets are supported: `sprite: { src: "...", frames: 4, speed: 150 }` (frames across a single row).
+- Animated GIFs are supported: `sprite: "assets/sprites/portal.gif"`.
+- If a trigger has `sprite` and `once: true`, the sprite is removed after the trigger runs successfully.
 - Modal actions can set `maxWidth` and `maxHeight` (for example `"900px"` or `"80vh"`).
 - `content/modals.js` entries can also define `maxWidth` and `maxHeight` for reusable modal sizing.
+
+### Teleport effect sprite
+
+Teleport actions can optionally add a spritesheet effect that plays forward at the start tile and backward at the target:
+
+```js
+action: {
+    kind: "teleport",
+    targetX: 10,
+    targetY: 5,
+    sprite: { src: "assets/sprites/portal_effect.png", frames: 4, speed: 150 }
+}
+```
+
+For animated GIFs, use `sprite: "assets/sprites/portal_effect.gif"` and set `speed` (in ms) to control how long
+the effect stays visible.
 
 ## Collision Notes
 

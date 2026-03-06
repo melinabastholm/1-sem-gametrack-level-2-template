@@ -96,13 +96,45 @@ code {
     pointer-events: none;
 }
 
-.player-sprite {
+.trigger-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.trigger-sprite {
     position: absolute;
     top: 0;
     left: 0;
     background-repeat: no-repeat;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+    user-select: none;
+    pointer-events: none;
+}
+
+.player-sprite {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+}
+
+.teleport-effect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    user-select: none;
+    pointer-events: none;
+    display: none;
 }
 
 .side-panel {
@@ -210,7 +242,6 @@ code {
 @media (min-width: 980px) {
     .app-main {
         grid-template-columns: 1fr 320px;
-        align-items: start;
     }
 
     .side-panel {

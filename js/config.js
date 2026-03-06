@@ -55,10 +55,15 @@ export const GAME_CONFIG = {
     // - Filled range (line or rectangle): { x1: 8, y1: 4, x2: 12, y2: 4 }
     solidTiles: [
         { x: 8, y: 2 }, { x: 12, y: 2 },
-        { x: 9, y: 3 }, { x: 10, y: 3 }, { x: 11, y: 3 },
+        { x: 9, y: 3 }, { x: 11, y: 3 },
         { x1: 8, y1: 4, x2: 12, y2: 4 },
     ],
 
+    // Triggers can also set optional helpers:
+    // - isSolid: true (blocks movement on that tile)
+    // - sprite: "assets/sprites/your_image.png" (draws a 32x32 image on the tile)
+    // - sprite: "assets/sprites/portal.gif" (animated gif)
+    // - sprite: { src: "assets/sprites/portal.png", frames: 4, speed: 150 } (spritesheet)
     triggers: [
         {
             id: "welcome_tile",
@@ -66,6 +71,7 @@ export const GAME_CONFIG = {
             x: 3,
             y: 2,
             once: true,
+            sprite: "assets/sprites/coin.gif",
             action: {
                 kind: "openModalText",
                 title: "Welcome",
@@ -77,6 +83,8 @@ export const GAME_CONFIG = {
             type: "onInteractCell",
             x: 10,
             y: 3,
+            isSolid: true,
+            sprite: "assets/sprites/sign.png",
             action: {
                 kind: "openModalHtml",
                 title: "Village Sign",
@@ -88,6 +96,7 @@ export const GAME_CONFIG = {
             type: "onEnterCell",
             x: 6,
             y: 6,
+            sprite: "assets/sprites/question.png",
             action: {
                 kind: "openModalVideo",
                 title: "Intro Video",
@@ -109,11 +118,21 @@ export const GAME_CONFIG = {
             type: "onEnterCell",
             x: 8,
             y: 3,
+            sprite: {
+                src: "assets/sprites/portal_overlay.png",
+                frames: 4,
+                speed: 150,
+            },
             action: {
                 kind: "teleport",
                 targetX: 13,
                 targetY: 3,
-                sfx: "teleport"
+                sfx: "teleport",
+                sprite: {
+                    src: "assets/sprites/portal_action.png",
+                    frames: 4,
+                    speed: 150,
+                },
             }
         },
         {
