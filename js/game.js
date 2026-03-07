@@ -24,6 +24,7 @@ const KEY_TO_DIRECTION = {
 
 const INTERACT_KEYS = new Set(["Space", "Enter", "NumpadEnter"]);
 const TURN_DELAY_MS = 120;
+const CONDITION_OPERATORS = new Set(["===", ">", ">=", "<", "<="]);
 
 const refs = {
     gameStage: document.querySelector(".game-stage"),
@@ -86,7 +87,8 @@ const state = {
 
     audio: null,
     modal: null,
-    triggerEngine: null
+    triggerEngine: null,
+    playerState: createInitialPlayerState()
 };
 
 boot();
@@ -234,6 +236,60 @@ function validateConfig(config) {
     if (!requiredDirections.includes(config.player.defaultFacing)) {
         fail("player.defaultFacing must be one of: up, down, left, right.");
     }
+
+    validatePlayerStateConfig(config.playerState, fail);
+}
+
+function validatePlayerStateConfig(playerState, fail) {
+    if (playerState === undefined) {
+        return;
+    }
+
+    if (!playerState || typeof playerState !== "object") {
+        fail("playerState must be an object when provided.");
+    }
+
+    validatePlayerStateBucket(playerState.items, "playerState.items", fail);
+    validatePlayerStateBucket(playerState.stats, "playerState.stats", fail);
+}
+
+function validatePlayerStateBucket(bucket, label, fail) {
+    if (bucket === undefined) {
+        return;
+    }
+
+    if (!bucket || typeof bucket !== "object" || Array.isArray(bucket)) {
+        fail(`${label} must be an object when provided.`);
+    }
+
+    for (const [key, value] of Object.entries(bucket)) {
+        if (!Number.isFinite(value)) {
+            fail(`${label}.${key} must be a number.`);
+        }
+    }
+}
+
+function createInitialPlayerState() {
+    return {
+        items: createStateBucket(GAME_CONFIG.playerState?.items),
+        stats: createStateBucket(GAME_CONFIG.playerState?.stats)
+    };
+}
+
+function createStateBucket(source) {
+    if (!source || typeof source !== "object" || Array.isArray(source)) {
+        return {};
+    }
+
+    const bucket = {};
+
+    for (const [key, value] of Object.entries(source)) {
+        if (Number.isFinite(value)) {
+            bucket[key] = value;
+        }
+    }
+
+    return bucket;
 }
 
 function buildSolidTileSet() {
@@ -655,6 +711,8 @@ function updateInfoBox() {
     const isFacingBlocked = !isFacingInsideMap || isSolidTile(facingTile.x, facingTile.y);
     const interactableTriggers = getAvailableInteractTriggersAt(facingTile.x, facingTile.y);
     const actionKinds = Array.from(new Set(interactableTriggers.map((trigger) => trigger.action.kind)));
+    const itemStatus = formatStateBucket(state.playerState.items);
+    const statStatus = formatStateBucket(state.playerState.stats);
 
     const facingStatus = isFacingInsideMap
         ? `(${facingTile.x}, ${facingTile.y})`
@@ -672,8 +730,21 @@ function updateInfoBox() {
         `Looking at: ${facingStatus}`,
         `Tile ahead blocked: ${blockedStatus}`,
         `Interactable: ${interactStatus}`,
+        `Items: ${itemStatus}`,
+        `Stats: ${statStatus}`,
         `Scale: ${state.currentScale}x`
     ].join("\n");
+}
+
+function formatStateBucket(bucket) {
+    const entries = Object.entries(bucket);
+    if (entries.length === 0) {
+        return "none";
+    }
+
+    return entries
+        .map(([key, value]) => `${key}=${value}`)
+        .join(", ");
 }
 
 function getFacingTileCoordinates() {
@@ -884,25 +955,147 @@ function runDeferredEnterTrigger() {
     state.triggerEngine.run("onEnterCell", x, y, { source: "deferred" });
 }
 
-function executeTriggerAction(action) {
-    if (!action || typeof action !== "object") {
+function executeTriggerAction(action, context = {}) {
+    const resolution = resolveTriggerAction(action, context.trigger);
+    const resolvedAction = resolution?.action;
+
+    if (!resolvedAction || typeof resolvedAction !== "object") {
+        return false;
+    }
+
+    if (!resolvedAction.kind || typeof resolvedAction.kind !== "string") {
         console.warn("[triggers] Invalid action object.");
         return false;
     }
 
-    switch (action.kind) {
+    switch (resolvedAction.kind) {
         case "playSound":
-            return executePlaySoundAction(action);
+            return formatTriggerExecutionResult(executePlaySoundAction(resolvedAction), resolution.shouldConsume);
         case "openModalText":
-            return executeOpenTextAction(action);
+            return formatTriggerExecutionResult(executeOpenTextAction(resolvedAction), resolution.shouldConsume);
         case "openModalVideo":
-            return executeOpenVideoAction(action);
+            return formatTriggerExecutionResult(executeOpenVideoAction(resolvedAction), resolution.shouldConsume);
         case "openModalHtml":
-            return executeOpenHtmlAction(action);
+            return formatTriggerExecutionResult(executeOpenHtmlAction(resolvedAction), resolution.shouldConsume);
         case "teleport":
-            return executeTeleportAction(action);
+            return formatTriggerExecutionResult(executeTeleportAction(resolvedAction), resolution.shouldConsume);
+        case "giveItem":
+            return formatTriggerExecutionResult(executeGiveItemAction(resolvedAction), resolution.shouldConsume);
+        case "removeItem":
+            return formatTriggerExecutionResult(executeRemoveItemAction(resolvedAction), resolution.shouldConsume);
+        case "changeStat":
+            return formatTriggerExecutionResult(executeChangeStatAction(resolvedAction), resolution.shouldConsume);
+        case "setStat":
+            return formatTriggerExecutionResult(executeSetStatAction(resolvedAction), resolution.shouldConsume);
         default:
-            console.warn(`[triggers] Unsupported action kind: ${String(action.kind)}`);
+            console.warn(`[triggers] Unsupported action kind: ${String(resolvedAction.kind)}`);
+            return false;
+    }
+}
+
+function resolveTriggerAction(action, trigger) {
+    if (!trigger || typeof trigger !== "object") {
+        return {
+            action,
+            shouldConsume: true
+        };
+    }
+
+    const conditions = Array.isArray(trigger.conditions) ? trigger.conditions : null;
+    if (!conditions || conditions.length === 0) {
+        return {
+            action: trigger.action,
+            shouldConsume: true
+        };
+    }
+
+    const didPass = evaluateTriggerConditions(conditions);
+    if (didPass) {
+        return {
+            action: trigger.action,
+            shouldConsume: true
+        };
+    }
+
+    if (trigger.elseAction && typeof trigger.elseAction === "object") {
+        return {
+            action: trigger.elseAction,
+            shouldConsume: false
+        };
+    }
+
+    return null;
+}
+
+function formatTriggerExecutionResult(didSucceed, shouldConsume) {
+    if (didSucceed === false) {
+        return false;
+    }
+
+    return {
+        didSucceed: true,
+        shouldConsume
+    };
+}
+
+function evaluateTriggerConditions(conditions) {
+    for (const condition of conditions) {
+        if (!evaluateSingleCondition(condition)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+function evaluateSingleCondition(condition) {
+    if (!condition || typeof condition !== "object") {
+        console.warn("[triggers] Condition must be an object.");
+        return false;
+    }
+
+    const scope = condition.scope;
+    const key = condition.key;
+    const op = condition.op;
+    const expectedValue = condition.value;
+
+    if (scope !== "items" && scope !== "stats") {
+        console.warn(`[triggers] Unsupported condition scope: ${String(scope)}.`);
+        return false;
+    }
+
+    if (typeof key !== "string" || key.trim() === "") {
+        console.warn("[triggers] Condition needs a non-empty key.");
+        return false;
+    }
+
+    if (!CONDITION_OPERATORS.has(op)) {
+        console.warn(`[triggers] Unsupported condition operator: ${String(op)}.`);
+        return false;
+    }
+
+    if (!Number.isFinite(expectedValue)) {
+        console.warn("[triggers] Condition value must be a number.");
+        return false;
+    }
+
+    const currentValue = Number(state.playerState[scope]?.[key] ?? 0);
+    return compareConditionValues(currentValue, op, expectedValue);
+}
+
+function compareConditionValues(leftValue, op, rightValue) {
+    switch (op) {
+        case "===":
+            return leftValue === rightValue;
+        case ">":
+            return leftValue > rightValue;
+        case ">=":
+            return leftValue >= rightValue;
+        case "<":
+            return leftValue < rightValue;
+        case "<=":
+            return leftValue <= rightValue;
+        default:
             return false;
     }
 }
@@ -916,6 +1109,84 @@ function executePlaySoundAction(action) {
     }
 
     return state.audio.playSound(soundKey);
+}
+
+function executeGiveItemAction(action) {
+    const itemKey = action.itemKey;
+    const amount = Number.isFinite(action.amount) ? action.amount : 1;
+
+    if (typeof itemKey !== "string" || itemKey.trim() === "") {
+        console.warn("[triggers] giveItem action needs a non-empty itemKey.");
+        return false;
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+        console.warn("[triggers] giveItem action needs a positive amount.");
+        return false;
+    }
+
+    changePlayerStateValue("items", itemKey, amount);
+    return true;
+}
+
+function executeRemoveItemAction(action) {
+    const itemKey = action.itemKey;
+    const amount = Number.isFinite(action.amount) ? action.amount : 1;
+
+    if (typeof itemKey !== "string" || itemKey.trim() === "") {
+        console.warn("[triggers] removeItem action needs a non-empty itemKey.");
+        return false;
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+        console.warn("[triggers] removeItem action needs a positive amount.");
+        return false;
+    }
+
+    const currentValue = Number(state.playerState.items[itemKey] ?? 0);
+    if (currentValue < amount) {
+        console.warn(`[triggers] Cannot remove ${amount} of item \"${itemKey}\" because the player only has ${currentValue}.`);
+        return false;
+    }
+
+    changePlayerStateValue("items", itemKey, -amount);
+    return true;
+}
+
+function executeChangeStatAction(action) {
+    const statKey = action.statKey;
+    const amount = action.amount;
+
+    if (typeof statKey !== "string" || statKey.trim() === "") {
+        console.warn("[triggers] changeStat action needs a non-empty statKey.");
+        return false;
+    }
+
+    if (!Number.isFinite(amount)) {
+        console.warn("[triggers] changeStat action needs a numeric amount.");
+        return false;
+    }
+
+    changePlayerStateValue("stats", statKey, amount);
+    return true;
+}
+
+function executeSetStatAction(action) {
+    const statKey = action.statKey;
+    const value = action.value;
+
+    if (typeof statKey !== "string" || statKey.trim() === "") {
+        console.warn("[triggers] setStat action needs a non-empty statKey.");
+        return false;
+    }
+
+    if (!Number.isFinite(value)) {
+        console.warn("[triggers] setStat action needs a numeric value.");
+        return false;
+    }
+
+    setPlayerStateValue("stats", statKey, value);
+    return true;
 }
 
 function executeOpenTextAction(action) {
@@ -1146,6 +1417,16 @@ function getContentEntry(contentKey) {
     }
 
     return entry;
+}
+
+function changePlayerStateValue(scope, key, amount) {
+    const currentValue = Number(state.playerState[scope]?.[key] ?? 0);
+    const nextValue = currentValue + amount;
+    state.playerState[scope][key] = nextValue;
+}
+
+function setPlayerStateValue(scope, key, value) {
+    state.playerState[scope][key] = value;
 }
 
 function setPlayerTilePosition(tileX, tileY) {

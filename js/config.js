@@ -33,6 +33,17 @@ export const GAME_CONFIG = {
         }
     },
 
+    // Simple player data that triggers can read and change.
+    playerState: {
+        items: {
+            coin: 0
+        },
+        stats: {
+            health: 3,
+            strength: 1
+        }
+    },
+
     // Event -> sound key mapping.
     audioEvents: {
         step: "step",
@@ -64,18 +75,20 @@ export const GAME_CONFIG = {
     // - sprite: "assets/sprites/your_image.png" (draws a 32x32 image on the tile)
     // - sprite: "assets/sprites/portal.gif" (animated gif)
     // - sprite: { src: "assets/sprites/portal.png", frames: 4, speed: 150 } (spritesheet)
+    // - conditions: [{ scope: "items", key: "coin", op: ">=", value: 1 }]
+    // - elseAction: { kind: "openModalText", title: "...", text: "..." }
     triggers: [
         {
-            id: "welcome_tile",
+            id: "coin_1",
             type: "onEnterCell",
             x: 3,
             y: 2,
             once: true,
             sprite: "assets/sprites/coin.gif",
             action: {
-                kind: "openModalText",
-                title: "Welcome",
-                text: "This is the starter map. Edit js/config.js to add your own triggers."
+                kind: "giveItem",
+                itemKey: "coin",
+                amount: 1
             }
         },
         {
@@ -85,10 +98,18 @@ export const GAME_CONFIG = {
             y: 3,
             isSolid: true,
             sprite: "assets/sprites/sign.png",
+            conditions: [
+                { scope: "items", key: "coin", op: ">=", value: 1 }
+            ],
             action: {
                 kind: "openModalHtml",
                 title: "Village Sign",
                 contentKey: "village_sign"
+            },
+            elseAction: {
+                kind: "openModalText",
+                title: "Village Sign",
+                text: "The sign slot takes 1 coin before it lights up."
             }
         },
         {

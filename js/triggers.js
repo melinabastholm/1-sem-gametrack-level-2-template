@@ -4,7 +4,11 @@ const SUPPORTED_ACTION_KINDS = new Set([
     "openModalText",
     "openModalVideo",
     "openModalHtml",
-    "teleport"
+    "teleport",
+    "giveItem",
+    "removeItem",
+    "changeStat",
+    "setStat"
 ]);
 
 export function createTriggerEngine({ triggers, executeAction, onTriggerConsumed = null, logger = console }) {
@@ -27,7 +31,7 @@ export function createTriggerEngine({ triggers, executeAction, onTriggerConsumed
                 continue;
             }
 
-            const didSucceed = executeAction(trigger.action, {
+            const executionResult = executeAction(trigger.action, {
                 ...context,
                 trigger,
                 eventType,
@@ -35,9 +39,15 @@ export function createTriggerEngine({ triggers, executeAction, onTriggerConsumed
                 eventY
             });
 
+            const didSucceed = executionResult !== false &&
+                (!executionResult || typeof executionResult !== "object" || executionResult.didSucceed !== false);
+            const shouldConsume = executionResult && typeof executionResult === "object"
+                ? executionResult.shouldConsume !== false
+                : didSucceed;
+
             if (didSucceed !== false) {
                 executedCount += 1;
-                if (trigger.once) {
+                if (trigger.once && shouldConsume) {
                     consumedTriggerIds.add(trigger.id);
                     if (typeof onTriggerConsumed === "function") {
                         try {
@@ -112,6 +122,20 @@ function normalizeTriggers(input, logger) {
             return;
         }
 
+        if (rawTrigger.elseAction) {
+            if (typeof rawTrigger.elseAction !== "object") {
+                logger.warn(`[triggers] Trigger \"${id}\" has an invalid elseAction. Skipping.`);
+                return;
+            }
+
+            if (!SUPPORTED_ACTION_KINDS.has(rawTrigger.elseAction.kind)) {
+                logger.warn(
+                    `[triggers] Trigger \"${id}\" has unsupported elseAction kind \"${String(rawTrigger.elseAction.kind)}\". Skipping.`
+                );
+                return;
+            }
+        }
+
         usedIds.add(id);
         validTriggers.push({
             ...rawTrigger,
@@ -120,7 +144,8 @@ function normalizeTriggers(input, logger) {
             x,
             y,
             once: rawTrigger.once === true,
-            action: { ...action }
+            action: { ...action },
+            elseAction: rawTrigger.elseAction ? { ...rawTrigger.elseAction } : null
         });
     });
 

@@ -34,6 +34,7 @@ Use [js/config.js](C:/Code/1sem-spillinje/1-sem-gametrack-level-2-template/js/co
 - `player.spriteSheetSrc`
 - `player.frameWidth`, `player.frameHeight`
 - `player.directions`
+- `playerState`
 - `audioEvents`
 - `sounds`
 - `solidTiles`
@@ -104,6 +105,36 @@ Notes:
 - Set `frames: 1` if you want a still frame in that direction.
 - The engine validates that the image is large enough for the configured rows and frames.
 
+## Player state
+
+The engine has one simple `playerState` object for inventory-like values and stats.
+
+Example:
+
+```js
+playerState: {
+    items: {
+        coin: 0
+    },
+    stats: {
+        health: 3,
+        strength: 1
+    }
+}
+```
+
+Use:
+
+- `items` for things the player has or collects
+- `stats` for numbers like health, strength, score, or energy
+
+Triggers can:
+
+- check these values with `conditions`
+- run `action` if the conditions pass
+- run `elseAction` if they fail
+- change values with `giveItem`, `removeItem`, `changeStat`, and `setStat`
+
 ## Blocking movement with `solidTiles`
 
 `solidTiles` defines map collision. The player cannot walk onto these tiles.
@@ -155,20 +186,47 @@ Optional keys:
 - `once`
 - `isSolid`
 - `sprite`
+- `conditions`
+- `elseAction`
 
 Basic example:
 
 ```js
 {
-    id: "welcome_tile",
+    id: "coin_1",
     type: "onEnterCell",
     x: 3,
     y: 2,
     once: true,
+    sprite: "assets/sprites/coin.gif",
     action: {
+        kind: "giveItem",
+        itemKey: "coin",
+        amount: 1
+    }
+}
+```
+
+Condition example:
+
+```js
+{
+    id: "village_sign",
+    type: "onInteractCell",
+    x: 10,
+    y: 3,
+    isSolid: true,
+    conditions: [
+        { scope: "items", key: "coin", op: ">=", value: 1 }
+    ],
+    action: {
+        kind: "openModalHtml",
+        contentKey: "village_sign"
+    },
+    elseAction: {
         kind: "openModalText",
-        title: "Welcome",
-        text: "This is the first room."
+        title: "Village Sign",
+        text: "You need 1 coin."
     }
 }
 ```
@@ -310,6 +368,54 @@ Teleport is useful for:
 - Secret passages
 - Entering buildings
 
+#### `giveItem`
+
+Adds to an item count in `playerState.items`.
+
+```js
+action: {
+    kind: "giveItem",
+    itemKey: "coin",
+    amount: 1
+}
+```
+
+#### `removeItem`
+
+Removes from an item count in `playerState.items`.
+
+```js
+action: {
+    kind: "removeItem",
+    itemKey: "coin",
+    amount: 1
+}
+```
+
+#### `changeStat`
+
+Adds or subtracts from a value in `playerState.stats`.
+
+```js
+action: {
+    kind: "changeStat",
+    statKey: "health",
+    amount: -1
+}
+```
+
+#### `setStat`
+
+Sets a value directly in `playerState.stats`.
+
+```js
+action: {
+    kind: "setStat",
+    statKey: "health",
+    value: 5
+}
+```
+
 ## Trigger helper keys
 
 ### `once: true`
@@ -398,6 +504,33 @@ Notes:
 
 - The teleport effect sprite is optional.
 - While the teleport effect is playing, movement and interaction are temporarily locked.
+
+## Condition rules
+
+Conditions are checked in order. All conditions must pass for the trigger `action` to run.
+
+Example:
+
+```js
+conditions: [
+    { scope: "items", key: "coin", op: ">=", value: 1 },
+    { scope: "stats", key: "health", op: "<=", value: 3 },
+    { scope: "stats", key: "strength", op: ">=", value: 1 },
+    { scope: "stats", key: "strength", op: "<=", value: 4 }
+]
+```
+
+Supported values:
+
+- `scope`: `items` or `stats`
+- `key`: the item/stat name to check
+- `op`: `===`, `>`, `>=`, `<`, `<=`
+- `value`: number to compare against
+
+If any condition fails:
+
+- `elseAction` runs if it exists
+- otherwise nothing happens
 
 ## Modal content workflow
 
@@ -504,8 +637,9 @@ You can also play sounds manually through triggers with `playSound`.
     once: true,
     sprite: "assets/sprites/coin.gif",
     action: {
-        kind: "playSound",
-        soundKey: "interact"
+        kind: "giveItem",
+        itemKey: "coin",
+        amount: 1
     }
 }
 ```
