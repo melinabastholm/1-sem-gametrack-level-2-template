@@ -4,17 +4,21 @@
 export const GAME_CONFIG = {
     tileSize: 32,
 
+    // Map size is counted in tiles, not pixels.
     map: {
         imageSrc: "assets/map/map.png",
         widthTiles: 40,
         heightTiles: 30,
     },
 
+    // Camera size is in pixels.
+    // Smaller values feel more zoomed in.
     camera: {
         widthPx: 320,
         heightPx: 240,
     },
 
+    // Player setup.
     player: {
         startTile: { x: 1, y: 1 },
         moveDurationMs: 150,
@@ -34,6 +38,11 @@ export const GAME_CONFIG = {
     },
 
     // Simple player data that triggers can read and change.
+    // Use items for keys, coins, quest items, and collectibles.
+    // Use stats for numbers like health, score, energy, or strength.
+    // Example trigger checks:
+    // { scope: "items", key: "coin", op: ">=", value: 1 }
+    // { scope: "stats", key: "health", op: "<=", value: 2 }
     playerState: {
         items: {
             coin: 0,
@@ -45,6 +54,7 @@ export const GAME_CONFIG = {
     },
 
     // Event -> sound key mapping.
+    // These are built-in engine events.
     audioEvents: {
         step: "step",
         interact: "interact",
@@ -53,9 +63,11 @@ export const GAME_CONFIG = {
     },
 
     // Sound key -> file path mapping.
+    // Add your own keys here, then use them in trigger actions.
     sounds: {
         step: "assets/sfx/step.wav",
         interact: "assets/sfx/interact.wav",
+        pickup: "assets/sfx/pickup.wav",
         teleport: "assets/sfx/teleport.wav",
         ui_open_modal: "assets/sfx/interact.wav",
     },
@@ -64,20 +76,26 @@ export const GAME_CONFIG = {
     // Use either:
     // - Single tile: { x: 10, y: 4 }
     // - Filled range (line or rectangle): { x1: 8, y1: 4, x2: 12, y2: 4 }
+    // Good for walls, water, furniture, and room borders.
     solidTiles: [
         { x1: 0, y1: 0, x2: 2, y2: 0 },
         { x1: 0, y1: 1, x2: 0, y2: 7 },
         { x1: 2, y1: 1, x2: 2, y2: 4 },
         { x1: 2, y1: 6, x2: 2, y2: 7 },
         { x1: 3, y1: 4, x2: 4, y2: 6 },
-        { x: 8, y: 2 },
-        { x: 12, y: 2 },
-        { x: 9, y: 3 },
-        { x: 11, y: 3 },
+        { x: 8, y: 2 }, { x: 12, y: 2 },
+        { x: 9, y: 3 }, { x: 11, y: 3 },
         { x1: 8, y1: 4, x2: 12, y2: 4 },
     ],
 
-    // Triggers can also set optional helpers:
+    // Triggers are the main way to build gameplay.
+    // One trigger can do multiple things by using actions: [...]
+    //
+    // Trigger types:
+    // - onEnterCell: runs when the player steps on the tile
+    // - onInteractCell: runs when the player faces the tile and presses Space/Enter
+    //
+    // Trigger helper keys:
     // - isSolid: true (blocks movement on that tile)
     // - sprite: "assets/sprites/your_image.png" (draws a 32x32 image on the tile)
     // - sprite: "assets/sprites/portal.gif" (animated gif)
@@ -85,7 +103,26 @@ export const GAME_CONFIG = {
     // - conditions: [{ scope: "items", key: "coin", op: ">=", value: 1 }]
     // - actions: [{ kind: "playSound", soundKey: "interact" }, { kind: "giveItem", itemKey: "coin", amount: 1 }]
     // - elseAction: { kind: "openModalText", title: "...", text: "..." }
-    // - makePassable action can remove collision and optionally swap to passableSprite
+    //
+    // Supported action kinds:
+    // - playSound
+    // - openModalText
+    // - openModalVideo
+    // - openModalHtml
+    // - teleport
+    // - giveItem
+    // - removeItem
+    // - changeStat
+    // - setStat
+    // - makePassable
+    //
+    // Small action examples:
+    // { kind: "playSound", soundKey: "interact" }
+    // { kind: "giveItem", itemKey: "coin", amount: 1 }
+    // { kind: "changeStat", statKey: "health", amount: -1 }
+    // { kind: "openModalText", title: "Hello", text: "Welcome!" }
+    // { kind: "teleport", targetX: 10, targetY: 4 }
+    // { kind: "makePassable", passableSprite: null }
     triggers: [
         {
             id: "coin_1",
@@ -97,7 +134,7 @@ export const GAME_CONFIG = {
             actions: [
                 {
                     kind: "playSound",
-                    soundKey: "interact",
+                    soundKey: "pickup",
                 },
                 {
                     kind: "giveItem",
@@ -152,7 +189,7 @@ export const GAME_CONFIG = {
             actions: [
                 {
                     kind: "playSound",
-                    soundKey: "interact",
+                    soundKey: "pickup",
                 },
                 {
                     kind: "giveItem",
@@ -171,7 +208,7 @@ export const GAME_CONFIG = {
             actions: [
                 {
                     kind: "playSound",
-                    soundKey: "interact",
+                    soundKey: "pickup",
                 },
                 {
                     kind: "giveItem",
@@ -204,7 +241,7 @@ export const GAME_CONFIG = {
                 {
                     kind: "openModalText",
                     title: "You opened the door!",
-                    text: "You used the pink key to open this door. Congrats on finding the secret pink key trigger and using it correctly in the conditions for this door trigger!",
+                    text: "You used the pink key to open this door. Congrats on finding the secret pink key!",
                 },
             ],
             elseAction: {
