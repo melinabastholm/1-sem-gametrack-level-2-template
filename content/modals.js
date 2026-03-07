@@ -1,9 +1,9 @@
 export const MODAL_CONTENT = {
-    coin_sign: {
-        title: "Coin Sign",
-        maxWidth: "90vw",
-        maxHeight: "90vh",
-        html: `
+  coin_sign: {
+    title: "Coin Sign",
+    maxWidth: "90vw",
+    maxHeight: "90vh",
+    html: `
             <article class="village-sign">
                 <header class="village-sign__hero">
                     <p class="village-sign__kicker">Trigger Conditions</p>
@@ -19,7 +19,7 @@ export const MODAL_CONTENT = {
                         <h4>1. Add conditions</h4>
                         <p>
                             Put a <code>conditions</code> array on the trigger. Every condition in the
-                            list must pass before the main <code>action</code> runs.
+                            list must pass before the main <code>actions</code> run.
                         </p>
                         <p class="village-sign__tag">conditions</p>
                     </div>
@@ -53,10 +53,12 @@ export const MODAL_CONTENT = {
     conditions: [
         { scope: "items", key: "coin", op: ">=", value: 1 }
     ],
-    action: {
-        kind: "openModalHtml",
-        contentKey: "coin_sign"
-    },
+    actions: [
+        {
+            kind: "openModalHtml",
+            contentKey: "coin_sign"
+        }
+    ],
     elseAction: {
         kind: "openModalText",
         title: "Need a coin",
@@ -67,17 +69,17 @@ export const MODAL_CONTENT = {
 
                 <aside class="village-sign__callout">
                     <strong>Simple rule:</strong>
-                    If all conditions pass, run <code>action</code>. If one fails, run
+                    If all conditions pass, run <code>actions</code>. If one fails, run
                     <code>elseAction</code> if it exists.
                 </aside>
             </article>
-        `
-    },
-    village_sign: {
-        title: "Village Sign",
-        maxWidth: "90vw",
-        maxHeight: "90vh",
-        html: `
+        `,
+  },
+  village_sign: {
+    title: "Village Sign",
+    maxWidth: "90vw",
+    maxHeight: "90vh",
+    html: `
             <article class="village-sign">
                 <header class="village-sign__hero">
                     <p class="village-sign__kicker">Map Notice Board</p>
@@ -110,12 +112,12 @@ export const MODAL_CONTENT = {
                     Copy this block, change text/colors/classes, and make your own styled location card.
                 </aside>
             </article>
-        `
-    },
-    intro_clip: {
-        title: "Intro Clip",
-        videoSrc: "assets/video/intro.mp4",
-        videoType: "video/mp4",
-        description: "Sample local video file from assets/video/intro.mp4"
-    }
+        `,
+  },
+  intro_clip: {
+    title: "Intro Clip",
+    videoSrc: "assets/video/intro.mp4",
+    videoType: "video/mp4",
+    description: "Sample local video file from assets/video/intro.mp4",
+  },
 };
