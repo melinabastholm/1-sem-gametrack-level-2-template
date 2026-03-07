@@ -1,4 +1,4 @@
-﻿# Level 2 Game Template Blueprint (PRD + AI Build Spec)
+# Level 2 Game Template Blueprint (PRD + AI Build Spec)
 
 ## 1) Purpose
 

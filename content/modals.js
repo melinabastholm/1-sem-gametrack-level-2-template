@@ -1,9 +1,9 @@
 export const MODAL_CONTENT = {
-  coin_sign: {
-    title: "Coin Sign",
-    maxWidth: "90vw",
-    maxHeight: "90vh",
-    html: `
+    coin_sign: {
+        title: "Coin Sign",
+        maxWidth: "90vw",
+        maxHeight: "90vh",
+        html: `
             <article class="village-sign">
                 <header class="village-sign__hero">
                     <p class="village-sign__kicker">Trigger Conditions</p>
@@ -74,12 +74,12 @@ export const MODAL_CONTENT = {
                 </aside>
             </article>
         `,
-  },
-  village_sign: {
-    title: "Village Sign",
-    maxWidth: "90vw",
-    maxHeight: "90vh",
-    html: `
+    },
+    village_sign: {
+        title: "Village Sign",
+        maxWidth: "90vw",
+        maxHeight: "90vh",
+        html: `
             <article class="village-sign">
                 <header class="village-sign__hero">
                     <p class="village-sign__kicker">Map Notice Board</p>
@@ -113,11 +113,11 @@ export const MODAL_CONTENT = {
                 </aside>
             </article>
         `,
-  },
-  intro_clip: {
-    title: "Intro Clip",
-    videoSrc: "assets/video/intro.mp4",
-    videoType: "video/mp4",
-    description: "Sample local video file from assets/video/intro.mp4",
-  },
+    },
+    intro_clip: {
+        title: "Intro Clip",
+        videoSrc: "assets/video/intro.mp4",
+        videoType: "video/mp4",
+        description: "Sample local video file from assets/video/intro.mp4",
+    },
 };
