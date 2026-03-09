@@ -21,6 +21,8 @@ The engine is built around three editable layers:
 2. Collision data in `solidTiles`
 3. Event logic in `triggers`
 
+You can also add an optional `map.overlaySrc` image that is drawn above the player. This is useful for tree tops, roofs, bridges, or anything the player should be able to walk behind.
+
 ## Where to edit things
 
 ### Main game data
@@ -28,6 +30,7 @@ The engine is built around three editable layers:
 Use [js/config.js](C:/Code/1sem-spillinje/1-sem-gametrack-level-2-template/js/config.js) for:
 
 - `map.imageSrc`, `map.widthTiles`, `map.heightTiles`
+- `map.overlaySrc` for optional artwork drawn above the player
 - `camera.widthPx`, `camera.heightPx`
 - `player.startTile`
 - `player.moveDurationMs`
@@ -68,12 +71,15 @@ Example:
 ```js
 map: {
     imageSrc: "assets/map/my_map.png",
+    overlaySrc: "assets/map/my_map_overlay.png",
     widthTiles: 50,
     heightTiles: 30
 }
 ```
 
 If the dimensions are wrong, the game stops at startup with a clear error message.
+
+If you use `overlaySrc`, the overlay image must use the same pixel size as the base map. If the overlay file is missing or the size is wrong, the game keeps running and logs a warning in the console.
 
 ## Setting up the player
 

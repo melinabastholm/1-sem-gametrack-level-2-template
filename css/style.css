@@ -86,7 +86,8 @@ code {
     transform-origin: top left;
 }
 
-.map-layer {
+.map-layer,
+.map-overlay-layer {
     position: absolute;
     top: 0;
     left: 0;
@@ -96,10 +97,19 @@ code {
     pointer-events: none;
 }
 
+.map-layer {
+    z-index: 0;
+}
+
+.map-overlay-layer {
+    z-index: 3;
+}
+
 .trigger-layer {
     position: absolute;
     top: 0;
     left: 0;
+    z-index: 1;
     pointer-events: none;
 }
 
@@ -118,7 +128,7 @@ code {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 1;
+    z-index: 2;
     background-repeat: no-repeat;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
@@ -128,7 +138,7 @@ code {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 2;
+    z-index: 4;
     background-repeat: no-repeat;
     image-rendering: pixelated;
     image-rendering: crisp-edges;

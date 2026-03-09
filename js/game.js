@@ -32,6 +32,7 @@ const refs = {
     viewport: document.getElementById("game-viewport"),
     world: document.getElementById("game-world"),
     mapLayer: document.getElementById("map-layer"),
+    mapOverlayLayer: document.getElementById("map-overlay-layer"),
     triggerLayer: document.getElementById("trigger-layer"),
     playerSprite: document.getElementById("player-sprite"),
     teleportEffect: document.getElementById("teleport-effect"),
@@ -115,6 +116,7 @@ async function boot() {
         validateSpriteSheet(spriteSheet);
 
         setupWorldDimensions();
+        await loadOptionalMapOverlay();
         setupTeleportEffect();
         buildTriggerSprites();
         setupPlayerSprite();
@@ -184,6 +186,18 @@ function validateConfig(config) {
         config.map.heightTiles <= 0
     ) {
         fail("map.heightTiles must be a positive integer.");
+    }
+
+    if (
+        config.map.overlaySrc !== undefined &&
+        (
+            typeof config.map.overlaySrc !== "string" ||
+            config.map.overlaySrc.trim() === ""
+        )
+    ) {
+        console.warn(
+            "[config] map.overlaySrc should be a non-empty string when provided. Overlay was disabled.",
+        );
     }
 
     if (!config.camera || typeof config.camera !== "object") {
@@ -451,8 +465,41 @@ function setupWorldDimensions() {
     refs.world.style.height = `${mapHeightPx}px`;
     refs.mapLayer.style.width = `${mapWidthPx}px`;
     refs.mapLayer.style.height = `${mapHeightPx}px`;
+    refs.mapOverlayLayer.style.width = `${mapWidthPx}px`;
+    refs.mapOverlayLayer.style.height = `${mapHeightPx}px`;
     refs.triggerLayer.style.width = `${mapWidthPx}px`;
     refs.triggerLayer.style.height = `${mapHeightPx}px`;
+}
+
+async function loadOptionalMapOverlay() {
+    refs.mapOverlayLayer.hidden = true;
+    refs.mapOverlayLayer.src = "";
+
+    const overlaySrc = GAME_CONFIG.map.overlaySrc;
+    if (typeof overlaySrc !== "string" || overlaySrc.trim() === "") {
+        return null;
+    }
+
+    try {
+        const overlayImage = await loadImageIntoElement(
+            refs.mapOverlayLayer,
+            overlaySrc,
+        );
+
+        if (!validateOverlayDimensions(overlayImage)) {
+            refs.mapOverlayLayer.hidden = true;
+            refs.mapOverlayLayer.src = "";
+            return null;
+        }
+
+        refs.mapOverlayLayer.hidden = false;
+        return overlayImage;
+    } catch (error) {
+        refs.mapOverlayLayer.hidden = true;
+        refs.mapOverlayLayer.src = "";
+        console.warn(`[map] Optional overlay failed to load: ${overlaySrc}`, error);
+        return null;
+    }
 }
 
 function setupTeleportEffect() {
@@ -1838,6 +1885,24 @@ function validateMapDimensions(mapImage) {
                 `but got ${mapImage.naturalWidth}x${mapImage.naturalHeight}px.`,
         );
     }
+}
+
+function validateOverlayDimensions(overlayImage) {
+    const expectedWidth = GAME_CONFIG.map.widthTiles * GAME_CONFIG.tileSize;
+    const expectedHeight = GAME_CONFIG.map.heightTiles * GAME_CONFIG.tileSize;
+
+    if (
+        overlayImage.naturalWidth !== expectedWidth ||
+        overlayImage.naturalHeight !== expectedHeight
+    ) {
+        console.warn(
+            `[map] Overlay dimension mismatch. Expected ${expectedWidth}x${expectedHeight}px ` +
+                `but got ${overlayImage.naturalWidth}x${overlayImage.naturalHeight}px. Overlay was skipped.`,
+        );
+        return false;
+    }
+
+    return true;
 }
 
 function validateSpriteSheet(image) {

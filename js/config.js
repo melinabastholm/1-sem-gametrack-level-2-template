@@ -7,6 +7,7 @@ export const GAME_CONFIG = {
     // Map size is counted in tiles, not pixels.
     map: {
         imageSrc: "assets/map/map.png",
+        overlaySrc: "assets/map/map_overlay.png",
         widthTiles: 40,
         heightTiles: 30,
     },
@@ -86,6 +87,7 @@ export const GAME_CONFIG = {
         { x: 8, y: 2 }, { x: 12, y: 2 },
         { x: 9, y: 3 }, { x: 11, y: 3 },
         { x1: 8, y1: 4, x2: 12, y2: 4 },
+        { x: 6, y: 9 },
     ],
 
     // Triggers are the main way to build gameplay.
