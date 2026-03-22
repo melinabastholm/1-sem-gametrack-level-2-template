@@ -277,12 +277,12 @@ export const GAME_CONFIG = {
             ],
         },
         {
-            id: "Ho",
+            id: "ho",
             type: "onEnterCell",
             x: 3,
             y: 6,
             once: true,
-            sprite: "assets/sprites/Ho.png",
+            sprite: "assets/sprites/ho.png",
             actions: [
                 {
                     kind: "playSound",
@@ -357,7 +357,7 @@ export const GAME_CONFIG = {
             x: 1,
             y: 8,
             once: true,
-            sprite: "assets/sprites/broccoli1.png",
+            sprite: "assets/sprites/broccoli.png",
             actions: [
                 {
                     kind: "playSound",
@@ -382,7 +382,7 @@ export const GAME_CONFIG = {
             x: 11,
             y: 11,
             once: true,
-            sprite: "assets/sprites/banan1.png",
+            sprite: "assets/sprites/banan.png",
             actions: [
                 {
                     kind: "playSound",
@@ -407,7 +407,7 @@ export const GAME_CONFIG = {
             x: 6,
             y: 11,
             once: true,
-            sprite: "assets/sprites/gulerod1.png",
+            sprite: "assets/sprites/gulerod.png",
             actions: [
                 {
                     kind: "playSound",
@@ -426,12 +426,12 @@ export const GAME_CONFIG = {
             ],
         },
         {
-            id: "hoo",
+            id: "ho1",
             type: "onEnterCell",
             x: 15,
             y: 10,
             once: true,
-            sprite: "assets/sprites/hoo.png",
+            sprite: "assets/sprites/ho.png",
             actions: [
                 {
                     kind: "playSound",
@@ -455,7 +455,7 @@ export const GAME_CONFIG = {
             x: 15,
             y: 13,
             once: true,
-            sprite: "assets/sprites/peberfrugt1.png",
+            sprite: "assets/sprites/peberfrugt.png",
             actions: [
                 {
                     kind: "playSound",
@@ -474,12 +474,12 @@ export const GAME_CONFIG = {
             ],
         },
         {
-            id: "rodbede",
+            id: "rodbede1",
             type: "onEnterCell",
             x: 22,
             y: 17,
             once: true,
-            sprite: "assets/sprites/rodbede1.png",
+            sprite: "assets/sprites/rodbede.png",
             actions: [
                 {
                     kind: "playSound",
@@ -505,7 +505,7 @@ export const GAME_CONFIG = {
             x: 2,
             y: 18,
             once: true,
-            sprite: "assets/sprites/ho5.png",
+            sprite: "assets/sprites/ho.png",
             actions: [
                 {
                     kind: "playSound",
@@ -530,7 +530,7 @@ export const GAME_CONFIG = {
             x: 10,
             y: 16,
             once: true,
-            sprite: "assets/sprites/ho2.png",
+            sprite: "assets/sprites/ho.png",
             actions: [
                 {
                     kind: "playSound",
@@ -555,7 +555,7 @@ export const GAME_CONFIG = {
             x: 17,
             y: 22,
             once: true,
-            sprite: "assets/sprites/broccoli2.png",
+            sprite: "assets/sprites/broccoli.png",
             actions: [
                 {
                     kind: "playSound",
@@ -580,7 +580,7 @@ export const GAME_CONFIG = {
             x: 21,
             y: 23,
             once: true,
-            sprite: "assets/sprites/salat2.png",
+            sprite: "assets/sprites/salat.png",
             actions: [
                 {
                     kind: "playSound",
@@ -605,7 +605,7 @@ export const GAME_CONFIG = {
             x: 22,
             y: 28,
             once: true,
-            sprite: "assets/sprites/peberfrugt2.png",
+            sprite: "assets/sprites/peberfrugt.png",
             actions: [
                 {
                     kind: "playSound",
@@ -629,7 +629,7 @@ export const GAME_CONFIG = {
             x: 14,
             y: 25,
             once: true,
-            sprite: "assets/sprites/ho3.png",
+            sprite: "assets/sprites/ho.png",
             actions: [
                 {
                     kind: "playSound",
@@ -655,7 +655,7 @@ export const GAME_CONFIG = {
             x: 14,
             y: 28,
             once: true,
-            sprite: "assets/sprites/gulerod2.png",
+            sprite: "assets/sprites/gulerod.png",
             actions: [
                 {
                     kind: "playSound",
@@ -808,7 +808,7 @@ export const GAME_CONFIG = {
             x: 7,
             y: 18,
             once: true,
-            sprite: "assets/sprites/chokolade1.png",
+            sprite: "assets/sprites/chokolade.png",
             actions: [
                 {
                     kind: "playSound",
@@ -834,7 +834,7 @@ export const GAME_CONFIG = {
             x:22,
             y: 12,
             once: true,
-            sprite: "assets/sprites/chokolade2.png",
+            sprite: "assets/sprites/chokolade.png",
             actions: [
                 {
                     kind: "playSound",
@@ -860,7 +860,7 @@ export const GAME_CONFIG = {
             x: 16,
             y: 17,
             once: true,
-            sprite: "assets/sprites/karamel1.png",
+            sprite: "assets/sprites/karamel.png",
             actions: [
                 {
                     kind: "playSound",
@@ -886,7 +886,7 @@ export const GAME_CONFIG = {
             x: 22,
             y: 23,
             once: true,
-            sprite: "assets/sprites/karamel2.png",
+            sprite: "assets/sprites/karamel.png",
             actions: [
                 {
                     kind: "playSound",
@@ -912,7 +912,7 @@ export const GAME_CONFIG = {
             x: 16,
             y: 28,
             once: true,
-            sprite: "assets/sprites/log1.png",
+            sprite: "assets/sprites/log.png",
             actions: [
                 {
                     kind: "playSound",
@@ -938,7 +938,7 @@ export const GAME_CONFIG = {
             x: 3,
             y: 28,
             once: true,
-            sprite: "assets/sprites/slikpind1.png",
+            sprite: "assets/sprites/slikpind.png",
             actions: [
                 {
                     kind: "playSound",
@@ -964,7 +964,7 @@ export const GAME_CONFIG = {
             x: 13,
             y: 23,
             once: true,
-            sprite: "assets/sprites/slikpind2.png",
+            sprite: "assets/sprites/slikpind.png",
             actions: [
                 {
                     kind: "playSound",

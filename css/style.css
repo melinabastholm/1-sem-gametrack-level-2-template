@@ -32,6 +32,8 @@ code {
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-panel);
     padding: var(--space-4);
+
+
 }
 
 .app-header h1 {
@@ -42,6 +44,7 @@ code {
 .app-header p {
     margin: 0;
     color: var(--color-muted);
+
 }
 
 .app-main {
@@ -87,15 +90,6 @@ code {
 }
 
 .map-layer,
-.map-overlay-layer {
-    position: absolute;
-    top: 0;
-    left: 0;
-    image-rendering: pixelated;
-    image-rendering: crisp-edges;
-    user-select: none;
-    pointer-events: none;
-}
 
 .map-layer {
     z-index: 0;
