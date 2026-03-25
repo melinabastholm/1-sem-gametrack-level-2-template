@@ -12,6 +12,19 @@ export function createAudioController(soundMap, logger = console) {
         };
     }
 
+    const bgMusic = new Audio("../assets/sfx/Baggrundsmusik.wav");
+
+    bgMusic.loop = true;
+    bgMusic.volume = 0.2;
+
+    document.addEventListener("click", () => {
+        bgMusic.play().then(() => {
+            console.log("Musik spiller!");
+        }).catch(err => {
+            console.log("Fejl:", err);
+        });
+    }, { once: true });
+
     Object.entries(soundMap).forEach(([soundKey, soundSrc]) => {
         if (typeof soundSrc !== "string" || soundSrc.trim() === "") {
             logger.warn(`[audio] Invalid sound path for key \"${soundKey}\".`);
